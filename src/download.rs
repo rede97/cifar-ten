@@ -54,37 +54,27 @@ fn download(url: String, download_dir: impl Into<PathBuf>) -> Result<(), Box<dyn
 
         let mut file = File::create(file_name.clone()).unwrap();
 
-        let pb = match cfg!(unix) {
-            true => {
-                use std::os::unix::fs::MetadataExt;
-                let full_size = ARCHIVE_DOWNLOAD_SIZE;
+        let full_size = ARCHIVE_DOWNLOAD_SIZE;
 
-                let pb_thread = thread::spawn(move || {
-                    let mut pb = ProgressBar::new(full_size.try_into().unwrap());
-                    pb.format("╢=> ╟");
+        let mut pb = ProgressBar::new(full_size.try_into().unwrap());
 
-                    let mut current_size = 0;
-                    while current_size < full_size {
-                        let meta = fs::metadata(file_name.clone())
-                            .expect(&format!("Couldn't get metadata on {:?}", file_name));
-                        current_size = meta.size() as usize;
-                        pb.set(current_size.try_into().unwrap());
-                        thread::sleep_ms(10);
-                    }
-                    pb.finish_println(" ");
-                });
-
-                easy.url(&url).unwrap();
-                easy.write_function(move |data| {
-                    file.write_all(data).unwrap();
-                    Ok(data.len())
-                })
-                .unwrap();
-                easy.perform().unwrap();
-                pb_thread.join().unwrap();
+        easy.progress_function(move |total_download_bytes, cur_download_bytes, _, _| {
+            if cur_download_bytes < total_download_bytes {
+                pb.set(cur_download_bytes.round() as u64);
+            } else {
+                pb.finish_println("Download done!");
             }
-            _ => (),
-        };
+            true
+        })
+        .unwrap();
+
+        easy.url(&url).unwrap();
+        easy.write_function(move |data| {
+            file.write_all(data).unwrap();
+            Ok(data.len())
+        })
+        .unwrap();
+        easy.perform().unwrap();
     }
 
     Ok(())
