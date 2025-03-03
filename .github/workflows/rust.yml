@@ -42,15 +42,3 @@ jobs:
       
       - name: Default
         run: cargo build
-
-      - name: ndarray 0.16
-        run: cargo build --features=to_ndarray_016
-      
-      - name: ndarray 0.15
-        run: cargo build --features to_ndarray_015
-      
-      - name: ndarray 0.14
-        run: cargo build --features=to_ndarray_014
-      
-      - name: ndarray 0.13
-        run: cargo build --features to_ndarray_013
