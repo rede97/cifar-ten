@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, ci ]
+  pull_request:
+    branches: [ master ]
+    types:
+    - opened
+    - reopened
+    - synchronize
+    - ready_for_review
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || !github.event.pull_request.draft }}
+    name: build-${{ matrix.toolchain }}
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain:
+          - 1.78.0
+          - stable
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          profile: minimal
+          components: clippy
+      
+      - name: Fmt
+        run: rustup component add rustfmt
+      
+      - name: Default
+        run: cargo build
+
+      - name: ndarray 0.16
+        run: cargo build --features=to_ndarray_016
+      
+      - name: ndarray 0.15
+        run: cargo build --features to_ndarray_015
+      
+      - name: ndarray 0.14
+        run: cargo build --features=to_ndarray_014
+      
+      - name: ndarray 0.13
+        run: cargo build --features to_ndarray_013
